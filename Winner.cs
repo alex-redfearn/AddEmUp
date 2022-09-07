@@ -6,22 +6,24 @@ namespace Winner
     {
         static void Main(string[] args)
         {
+            Start(args);
+        }
+
+        private static void Start(string[] args)
+        {
             string input = GetInputFile(args);
             string ouptut = GetOutputFile(args);
 
-            Console.WriteLine(input);
-            Console.WriteLine(ouptut);
+            if(ouptut == "")
+            {
+                return;
+            }
 
             if(input == "")
             {
-                Console.WriteLine("Missing input file");
+                WriteOutput(ouptut, new[] {"ERROR Missing input file"});
+                return;
             }
-
-            if(ouptut == "")
-            {
-                Console.WriteLine("Missing output file");
-            }
-            
         }
 
         private static string GetInputFile(string[] args)
@@ -55,6 +57,11 @@ namespace Winner
                 Console.WriteLine("Exception caught: {0}.", e);
                 return "";
             }
+        }
+
+        private static void WriteOutput(string file, string[] text)
+        {
+            System.IO.File.WriteAllLines(file, text);
         }
     }
 }
