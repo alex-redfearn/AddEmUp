@@ -56,7 +56,7 @@ namespace Winner
                     player.SetScore();
                 }
 
-                Console.WriteLine(Result.FormatResult(FaceResult.GetWinners(players)));
+                WriteResult(players);
             }
             catch (Exception ex)
             {
@@ -64,7 +64,6 @@ namespace Winner
                 {
                     Console.WriteLine($"Writing \"ERROR\" to output, exception: {ex.Message}");
                     ((OutputFile)_outputFile).Write(new string[] { "ERROR" });
-
                 }
                 catch (Exception writeEx)
                 {
@@ -72,6 +71,44 @@ namespace Winner
                 }
                 return;
             }
+        }
+
+        private void WriteResult(List<Player> players)
+        {
+            string result;
+            List<Player> winnersByFaceValue = FaceResult.GetWinners(players);
+
+            // If the sum of the face values of > 1 players match
+            // then the sum of the suit values are calculated for these players.
+            if (winnersByFaceValue.Count > 1)
+            {
+                // If the suit values are also equal both players are printed.
+                result = Result.FormatResult(SuitResult.GetWinners(winnersByFaceValue));
+            }
+            else
+            {
+                result = Result.FormatResult(winnersByFaceValue);
+            }
+
+            Console.WriteLine(result);
+
+            ((OutputFile)_outputFile).Write(new string[] { result });
+        }
+    }
+
+    /// <summary>
+    /// Extends Result. Determines the result of the suit values in a hand.
+    /// </summary>
+    class SuitResult : Result
+    {
+        public static List<Player> GetWinners(List<Player> players)
+        {
+            int maxScore = GetMaxScore(players.Select(player => player.SuitScore));
+
+            return players
+                .Where(player => player.SuitScore.Equals(maxScore))
+                .Select(player => player)
+                .ToList();
         }
     }
 
@@ -117,7 +154,7 @@ namespace Winner
     {
         public InputFile(string[] args, string option) : base(args, option)
         {
-            // Using parents constructor
+            // Using parents constructor.
         }
 
         public List<Player> Parse()
@@ -200,7 +237,7 @@ namespace Winner
     {
         public OutputFile(string[] args, string option) : base(args, option)
         {
-            // Using parents constructor
+            // Using parents constructor.
         }
 
         /* 
@@ -347,7 +384,7 @@ namespace Winner
                 }
             }
 
-            // Standard card values 1 to 13
+            // Standard card values 1 to 13.
             if (value < 1 || value > 13)
             {
                 throw new Exception($"Invalid face, {card}");
@@ -380,7 +417,7 @@ namespace Winner
 
         private bool IsValidCard(string card)
         {
-            // A card must have a lenth of two (2H) or three (10C)
+            // A card must have a lenth of two (2H) or three (10C).
             return card.Length > 1 && card.Length < 4;
         }
     }
