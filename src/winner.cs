@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Winner
 {
@@ -31,14 +32,21 @@ namespace Winner
             try
             {
                 List<Player> players = ((InputFile)_inputFile).Parse();
+
+                if(!IsEachPlayerUnique(players))
+                {
+                    throw new Exception("Duplicate players");
+                }
+
                 foreach (Player player in players)
                 {
-                    Console.WriteLine(player.Name);
-                    Console.WriteLine(player.Cards[0].Key);
-                    Console.WriteLine(player.Cards[0].FaceValue);
-                    Console.WriteLine(player.Cards[0].SuitValue);
-                    Console.WriteLine();
+                    if(IsEachCardUnique(player.Cards))
+                    {
+                        throw new Exception("Hand contains duplicate cards");
+                    }
                 }
+
+                Console.WriteLine("done");
             }
             catch (Exception ex)
             {
@@ -54,6 +62,19 @@ namespace Winner
                 }
                 return;
             }
+        }
+
+        // If duplicates are found the distinct list will have a count < 5.
+        private bool IsEachPlayerUnique(List<Player> players)
+        {
+            IEnumerable<String> dupes = players.Select(player => player.Name).Distinct();
+            return dupes.Count() == 5;
+        }
+
+        private bool IsEachCardUnique(List<Card> hand)
+        {
+            IEnumerable<String> dupes = hand.Select(card => card.Key).Distinct();
+            return dupes.Count() == 5;
         }
     }
 
@@ -99,7 +120,7 @@ namespace Winner
 
             int count = players.Count;
             // AddEmUp requires five players.
-            if (count ==  5)
+            if (count != 5)
             {
                 throw new Exception($"Invalid player count, player count {count}");
             }
@@ -128,7 +149,7 @@ namespace Winner
 
             int count = cards.Count;
             // Each player MUST have a hand of five cards.
-            if (count == 5)
+            if (count != 5)
             {
                 throw new Exception(String.Format($"Invalid card amount, card count {count}"));
             }
