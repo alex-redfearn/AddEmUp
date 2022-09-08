@@ -1,9 +1,16 @@
-﻿using System;
+﻿/// <summary>
+///  This program executes the game "Add 'Em Up".
+/// </summary>
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Winner
 {
+    /// <summary>
+    /// Main method.
+    /// </summary>
     class Winner
     {
         static void Main(string[] args)
@@ -13,6 +20,9 @@ namespace Winner
         }
     }
 
+    /// <summary>
+    /// Responsible for initiating the game of "Add 'Em Up".
+    /// </summary>
     class Game
     {
         private File _inputFile;
@@ -33,20 +43,20 @@ namespace Winner
             {
                 List<Player> players = ((InputFile)_inputFile).Parse();
 
-                if(!IsEachPlayerUnique(players))
-                {
+                if (!Player.ArePlayersUnique(players))
                     throw new Exception("Duplicate players");
-                }
 
                 foreach (Player player in players)
                 {
-                    if(IsEachCardUnique(player.Cards))
+                    if (!player.IsHandUnique())
                     {
                         throw new Exception("Hand contains duplicate cards");
                     }
+
+                    player.SetScore();
                 }
 
-                Console.WriteLine("done");
+                Console.WriteLine(Result.FormatResult(FaceResult.GetWinners(players)));
             }
             catch (Exception ex)
             {
@@ -63,21 +73,46 @@ namespace Winner
                 return;
             }
         }
+    }
 
-        // If duplicates are found the distinct list will have a count < 5.
-        private bool IsEachPlayerUnique(List<Player> players)
+    /// <summary>
+    /// Extends Result. Determines the result of the face values in a hand.
+    /// </summary>
+    class FaceResult : Result
+    {
+        public static List<Player> GetWinners(List<Player> players)
         {
-            IEnumerable<String> dupes = players.Select(player => player.Name).Distinct();
-            return dupes.Count() == 5;
-        }
+            int maxScore = GetMaxScore(players.Select(player => player.FaceScore));
 
-        private bool IsEachCardUnique(List<Card> hand)
-        {
-            IEnumerable<String> dupes = hand.Select(card => card.Key).Distinct();
-            return dupes.Count() == 5;
+            return players
+                .Where(player => player.FaceScore.Equals(maxScore))
+                .Select(player => player)
+                .ToList();
         }
     }
 
+    /// <summary>
+    /// Formats the result string.
+    /// </summary>
+    class Result
+    {
+        public static int GetMaxScore(IEnumerable<int> scores)
+        {
+            return scores.Max();
+        }
+
+        public static string FormatResult(List<Player> winners)
+        {
+            int score = winners[0].FaceScore;
+            string names = String.Join(",", winners.Select(player => player.Name));
+
+            return $"{names}:{score}";
+        }
+    }
+
+    /// <summary>
+    /// Extends File. Parses input file.
+    /// </summary>
     class InputFile : File
     {
         public InputFile(string[] args, string option) : base(args, option)
@@ -158,6 +193,9 @@ namespace Winner
         }
     }
 
+    /// <summary>
+    /// Extends File. Writes to ouptut file.
+    /// </summary>
     class OutputFile : File
     {
         public OutputFile(string[] args, string option) : base(args, option)
@@ -177,6 +215,9 @@ namespace Winner
         }
     }
 
+    /// <summary>
+    /// Gets the path of files passed as command line arguments.
+    /// </summary>
     class File
     {
         public static readonly string INPUT_FILE_OPTION = "--in";
@@ -212,19 +253,43 @@ namespace Winner
             }
         }
     }
-
+    /// <summary>
+    /// Represents a single player in the game.
+    /// </summary>
     class Player
     {
         public string Name { get; }
-        public List<Card> Cards { get; }
+        public List<Card> Hand { get; }
+        public int FaceScore { get; private set; }
+        public int SuitScore { get; private set; }
 
-        public Player(string name, List<Card> card)
+        public Player(string name, List<Card> cards)
         {
             Name = name;
-            Cards = card;
+            Hand = cards;
+        }
+
+        // If list.Distinct() has a count < list we can safely assume a duplicate is present.
+        public static bool ArePlayersUnique(List<Player> players)
+        {
+            return players.Select(player => player.Name).Distinct().Count() == players.Count();
+        }
+
+        public bool IsHandUnique()
+        {
+            return Hand.Select(card => card.Key).Distinct().Count() == Hand.Count();
+        }
+
+        public void SetScore()
+        {
+            FaceScore = Hand.Select(card => card.FaceValue).Sum();
+            SuitScore = Hand.Select(card => card.SuitValue).Sum();
         }
     }
 
+    /// <summary>
+    /// Defines non numeric card face values and their equivalent int values.
+    /// </summary>
     enum CardFace
     {
         A = 1,
@@ -233,6 +298,9 @@ namespace Winner
         K = 13
     }
 
+    /// <summary>
+    /// Defines card suits and their int values.
+    /// </summary>
     enum CardSuit
     {
         S = 4,
@@ -241,6 +309,9 @@ namespace Winner
         C = 1
     }
 
+    /// <summary>
+    /// Represents a single card in a players hand.
+    /// </summary>
     class Card
     {
         public string Key { get; }
