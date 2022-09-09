@@ -23,10 +23,10 @@ namespace Winner
     /// <summary>
     /// Responsible for initiating the game of "Add 'Em Up".
     /// </summary>
-    class Game
+    public class Game
     {
-        private File _inputFile;
-        private File _outputFile;
+        private readonly File _inputFile;
+        private readonly File _outputFile;
         public Game(string[] args)
         {
             _inputFile = new InputFile(args, File.INPUT_FILE_OPTION);
@@ -99,7 +99,7 @@ namespace Winner
     /// <summary>
     /// Extends Result. Determines the result of the suit values in a hand.
     /// </summary>
-    class SuitResult : Result
+    public class SuitResult : Result
     {
         public static List<Player> GetWinners(List<Player> players)
         {
@@ -115,7 +115,7 @@ namespace Winner
     /// <summary>
     /// Extends Result. Determines the result of the face values in a hand.
     /// </summary>
-    class FaceResult : Result
+    public class FaceResult : Result
     {
         public static List<Player> GetWinners(List<Player> players)
         {
@@ -131,7 +131,7 @@ namespace Winner
     /// <summary>
     /// Formats the result string.
     /// </summary>
-    class Result
+    public class Result
     {
         public static int GetMaxScore(IEnumerable<int> scores)
         {
@@ -150,7 +150,7 @@ namespace Winner
     /// <summary>
     /// Extends File. Parses input file.
     /// </summary>
-    class InputFile : File
+    public class InputFile : File
     {
         public InputFile(string[] args, string option) : base(args, option)
         {
@@ -233,7 +233,7 @@ namespace Winner
     /// <summary>
     /// Extends File. Writes to ouptut file.
     /// </summary>
-    class OutputFile : File
+    public class OutputFile : File
     {
         public OutputFile(string[] args, string option) : base(args, option)
         {
@@ -255,7 +255,7 @@ namespace Winner
     /// <summary>
     /// Gets the path of files passed as command line arguments.
     /// </summary>
-    class File
+    public class File
     {
         public static readonly string INPUT_FILE_OPTION = "--in";
         public static readonly string OUTPUT_FILE_OPTION = "--out";
@@ -293,7 +293,7 @@ namespace Winner
     /// <summary>
     /// Represents a single player in the game.
     /// </summary>
-    class Player
+    public class Player
     {
         public string Name { get; }
         public List<Card> Hand { get; }
@@ -327,7 +327,7 @@ namespace Winner
     /// <summary>
     /// Defines non numeric card face values and their equivalent int values.
     /// </summary>
-    enum CardFace
+    public enum CardFace
     {
         A = 1,
         J = 11,
@@ -338,7 +338,7 @@ namespace Winner
     /// <summary>
     /// Defines card suits and their int values.
     /// </summary>
-    enum CardSuit
+    public enum CardSuit
     {
         S = 4,
         H = 3,
@@ -349,7 +349,7 @@ namespace Winner
     /// <summary>
     /// Represents a single card in a players hand.
     /// </summary>
-    class Card
+    public class Card
     {
         public string Key { get; }
         public int FaceValue { get; }
