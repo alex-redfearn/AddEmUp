@@ -11,9 +11,9 @@ namespace Winner
     /// <summary>
     /// Main method.
     /// </summary>
-    class Winner
+    public class Winner
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             Game game = new Game(args);
             game.Play();
@@ -63,7 +63,7 @@ namespace Winner
                 try
                 {
                     Console.WriteLine($"Writing \"ERROR\" to output, exception: {ex.Message}");
-                    ((OutputFile)_outputFile).Write(new string[] { "ERROR" });
+                    ((OutputFile)_outputFile).Write("ERROR");
                 }
                 catch (Exception writeEx)
                 {
@@ -75,80 +75,101 @@ namespace Winner
 
         private void WriteResult(List<Player> players)
         {
-            string result;
-            List<Player> winnersByFaceValue = FaceResult.GetWinners(players);
+            FaceResult faceResult = new FaceResult(players);
+            string result = faceResult.GetResult();
 
-            // If the sum of the face values of > 1 players match
-            // then the sum of the suit values are calculated for these players.
-            if (winnersByFaceValue.Count > 1)
+            // If the face values of > 1 players match.
+            if (faceResult.GetWinners().Count > 1)
             {
-                // If the suit values are also equal both players are printed.
-                result = Result.FormatResult(SuitResult.GetWinners(winnersByFaceValue));
-            }
-            else
-            {
-                result = Result.FormatResult(winnersByFaceValue);
+                // Then the result is based on the suit values of these players.
+                SuitResult suitResult = new SuitResult(faceResult.GetWinners());
+                result = suitResult.GetResult();
             }
 
             Console.WriteLine(result);
-
-            ((OutputFile)_outputFile).Write(new string[] { result });
+            ((OutputFile)_outputFile).Write(result);
         }
     }
 
     /// <summary>
-    /// Extends Result. Determines the result of the suit values in a hand.
+    /// Implements Result. Determines the result by suit value.
     /// </summary>
     public class SuitResult : Result
     {
-        public static List<Player> GetWinners(List<Player> players)
+        public SuitResult(List<Player> players) : base(players)
         {
-            int maxScore = GetMaxScore(players.Select(player => player.SuitScore));
+            // Using parents constructor.
+        }
 
+
+        protected override List<Player> GetWinners(List<Player> players)
+        {
             return players
-                .Where(player => player.SuitScore.Equals(maxScore))
+                .Where(player => player.SuitScore.Equals(_maxSuitScore))
                 .Select(player => player)
                 .ToList();
         }
     }
 
     /// <summary>
-    /// Extends Result. Determines the result of the face values in a hand.
+    /// Implements Result. Determines the result by face value.
     /// </summary>
     public class FaceResult : Result
     {
-        public static List<Player> GetWinners(List<Player> players)
-        {
-            int maxScore = GetMaxScore(players.Select(player => player.FaceScore));
 
+        public FaceResult(List<Player> players) : base(players)
+        {
+            // Using parents constructor.
+        }
+
+        protected override List<Player> GetWinners(List<Player> players)
+        {
             return players
-                .Where(player => player.FaceScore.Equals(maxScore))
+                .Where(player => player.FaceScore.Equals(_maxFaceScore))
                 .Select(player => player)
                 .ToList();
         }
     }
 
     /// <summary>
-    /// Formats the result string.
+    /// Abstract Result. Returns formatted result.
     /// </summary>
-    public class Result
+    public abstract class Result
     {
-        public static int GetMaxScore(IEnumerable<int> scores)
+        protected readonly List<Player> _winners;
+        protected readonly int _maxFaceScore;
+        protected readonly int _maxSuitScore;
+
+        public Result(List<Player> players)
+        {
+            _maxFaceScore = GetMaxScore(players.Select(player => player.FaceScore));
+            _maxSuitScore = GetMaxScore(players.Select(player => player.SuitScore));
+            _winners = GetWinners(players);
+        }
+
+        protected abstract List<Player> GetWinners(List<Player> players);
+
+        private static int GetMaxScore(IEnumerable<int> scores)
         {
             return scores.Max();
         }
 
-        public static string FormatResult(List<Player> winners)
+        public List<Player> GetWinners()
         {
-            int score = winners[0].FaceScore;
-            string names = String.Join(",", winners.Select(player => player.Name));
+            return _winners;
+        }
 
-            return $"{names}:{score}";
+        public string GetResult()
+        {
+            // The result should be in the format {Name}:{score} or {Name},{Name}:{Score} in a tie.
+            string names = String.Join(",", _winners.Select(player => player.Name));
+
+            return $"{names}:{_maxFaceScore}";
         }
     }
 
     /// <summary>
-    /// Extends File. Parses input file.
+    /// Parses input file.
     /// </summary>
     public class InputFile : File
     {
@@ -159,14 +180,9 @@ namespace Winner
 
         public List<Player> Parse()
         {
-            if (String.IsNullOrEmpty(base.Name) || !IsTextFile())
-            {
-                throw new Exception("Missing or invalid input file");
-            }
-
-            string text = System.IO.File.ReadAllText(base.Name);
-
-            return ParsePlayers(SplitInput(text));
+            string text = GetText();
+            string[] rows = GetRows(text);
+            return ParsePlayers(rows);
         }
 
         private bool IsTextFile()
@@ -175,13 +191,23 @@ namespace Winner
             return splitFile.Length != 0 && splitFile[splitFile.Length - 1] == "txt";
         }
 
-        // Each player is seperated within the file by a new line.
-        private string[] SplitInput(string input)
+        private string GetText()
         {
-            return input.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
+            if (String.IsNullOrEmpty(base.Name) || !IsTextFile())
+            {
+                throw new Exception("Missing or invalid input file");
+            }
+
+            return System.IO.File.ReadAllText(base.Name);
         }
 
-        private List<Player> ParsePlayers(string[] rows)
+        private static string[] GetRows(string text)
+        {
+            // Each player is seperated within the file by a new line.
+            return text.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
+        }
+
+        private static List<Player> ParsePlayers(string[] rows)
         {
             List<Player> players = new List<Player>();
             foreach (string row in rows)
@@ -191,7 +217,6 @@ namespace Winner
             }
 
             int count = players.Count;
-            // AddEmUp requires five players.
             if (count != 5)
             {
                 throw new Exception($"Invalid player count, player count {count}");
@@ -201,13 +226,13 @@ namespace Winner
         }
 
         // Player names are provided in the format {Name}:{cards}
-        private string ParseName(string row)
+        private static string ParseName(string row)
         {
             return row.Split(":")[0];
         }
 
-        // Players hands are provided in the format AH, 3C, 8C , 10S, JD
-        private List<Card> ParseHand(string row)
+        // Players hands are provided in the format AH, 3C, 8C, 10S, JD
+        private static List<Card> ParseHand(string row)
         {
             string joinedHand = row.Split(":")[1];
             string[] splitHand = joinedHand.Split(",");
@@ -220,7 +245,6 @@ namespace Winner
             }
 
             int count = cards.Count;
-            // Each player MUST have a hand of five cards.
             if (count != 5)
             {
                 throw new Exception(String.Format($"Invalid card amount, card count {count}"));
@@ -242,13 +266,13 @@ namespace Winner
 
         /* 
             Output file should contain the following:
-                The name of the winner and their score (colon separated).
-                A comma separated list of winners in the case of a tie and the score (colon separated).
-                "ERROR", if the input file had any issue.
+            The name of the winner and their score (colon separated).
+            A comma separated list of winners in the case of a tie and the score (colon separated).
+            "ERROR", if the input file had any issue.
         */
-        public void Write(string[] output)
+        public void Write(string output)
         {
-            System.IO.File.WriteAllLines(base.Name, output);
+            System.IO.File.WriteAllLines(base.Name, new string[] { output });
         }
     }
 
@@ -267,7 +291,7 @@ namespace Winner
         }
 
         // Files are passed as command line arguments: --in fileName.txt --out fileName.txt
-        private string GetFile(string option, string[] args)
+        private static string GetFile(string option, string[] args)
         {
             try
             {
@@ -290,6 +314,7 @@ namespace Winner
             }
         }
     }
+
     /// <summary>
     /// Represents a single player in the game.
     /// </summary>
@@ -306,15 +331,15 @@ namespace Winner
             Hand = cards;
         }
 
-        // If list.Distinct() has a count < list we can safely assume a duplicate is present.
         public static bool ArePlayersUnique(List<Player> players)
         {
-            return players.Select(player => player.Name).Distinct().Count() == players.Count();
+            // If list.Distinct() has a count < list we can safely assume a duplicate is present.
+            return players.Select(player => player.Name).Distinct().Count() == players.Count;
         }
 
         public bool IsHandUnique()
         {
-            return Hand.Select(card => card.Key).Distinct().Count() == Hand.Count();
+            return Hand.Select(card => card.Key).Distinct().Count() == Hand.Count;
         }
 
         public void SetScore()
@@ -358,17 +383,17 @@ namespace Winner
         public Card(string card)
         {
             Key = card;
-            FaceValue = ParseFace(card);
-            SuitValue = ParseSuit(card);
+            FaceValue = ParseFace();
+            SuitValue = ParseSuit();
         }
 
-        // Each card is provided in the format {face}{suit} e.g. AH, 3C, 10D
-        private int ParseFace(string card)
+        // Each card is provided in the format {face}{suit} e.g. AH,3C,10D
+        private int ParseFace()
         {
             int value = 0;
-            if (IsValidCard(card))
+            if (IsValidCard())
             {
-                string face = card.Substring(0, card.Length - 1);
+                string face = Key.Substring(0, Key.Length - 1);
 
                 // A cards face can either be an int value (2 - 10) or A,J,Q,K
                 int faceIntValue;
@@ -387,18 +412,18 @@ namespace Winner
             // Standard card values 1 to 13.
             if (value < 1 || value > 13)
             {
-                throw new Exception($"Invalid face, {card}");
+                throw new Exception($"Invalid face, {Key}");
             }
 
             return value;
         }
 
-        private int ParseSuit(string card)
+        private int ParseSuit()
         {
             int value = 0;
-            if (IsValidCard(card))
+            if (IsValidCard())
             {
-                string suit = card.Substring(card.Length - 1);
+                string suit = Key.Substring(Key.Length - 1);
 
                 CardSuit suitValue;
                 if (Enum.TryParse<CardSuit>(suit, out suitValue))
@@ -409,16 +434,16 @@ namespace Winner
 
             if (value < 1 || value > 4)
             {
-                throw new Exception($"Invalid suit, {card}");
+                throw new Exception($"Invalid suit, {Key}");
             }
 
             return value;
         }
 
-        private bool IsValidCard(string card)
+        private bool IsValidCard()
         {
             // A card must have a lenth of two (2H) or three (10C).
-            return card.Length > 1 && card.Length < 4;
+            return Key.Length > 1 && Key.Length < 4;
         }
     }
 }
