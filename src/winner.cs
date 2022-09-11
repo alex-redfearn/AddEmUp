@@ -27,6 +27,7 @@ namespace Winner
     {
         private readonly File _inputFile;
         private readonly File _outputFile;
+
         public Game(string[] args)
         {
             _inputFile = new InputFile(args, File.INPUT_FILE_OPTION);
@@ -101,7 +102,6 @@ namespace Winner
             // Using parents constructor.
         }
 
-
         protected override List<Player> GetWinners(List<Player> players)
         {
             return players
@@ -116,7 +116,6 @@ namespace Winner
     /// </summary>
     public class FaceResult : Result
     {
-
         public FaceResult(List<Player> players) : base(players)
         {
             // Using parents constructor.
@@ -285,6 +284,7 @@ namespace Winner
         public static readonly string OUTPUT_FILE_OPTION = "--out";
 
         public string Name { get; }
+        
         public File(string[] args, string option)
         {
             Name = GetFile(option, args);
@@ -428,7 +428,7 @@ namespace Winner
                 CardSuit suitValue;
                 if (Enum.TryParse<CardSuit>(suit, out suitValue))
                 {
-                    return (int)suitValue;
+                    value = (int)suitValue;
                 }
             }
 
