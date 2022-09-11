@@ -47,6 +47,7 @@ namespace WinnerTest
             List<Player> winners = faceResult.GetWinners();
 
             // Assert
+            Assert.Equal(1, winners.Count);
             Assert.Equal(playerOne.Name, faceResult.GetWinners()[0].Name);
         }
 
