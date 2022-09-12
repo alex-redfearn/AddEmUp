@@ -25,7 +25,6 @@ namespace WinnerTest
             playerOneHand.Add(new Card("JD"));
 
             Player playerOne = new Player(playerOneName, playerOneHand);
-            playerOne.SetScore();
 
             string playerTwoName = "Bob";
             List<Card> playerTwoHand = new List<Card>();
@@ -36,7 +35,6 @@ namespace WinnerTest
             playerTwoHand.Add(new Card("JD"));
 
             Player playerTwo = new Player(playerTwoName, playerTwoHand);
-            playerTwo.SetScore();
 
             List<Player> players = new List<Player>();
             players.Add(playerOne);
@@ -44,11 +42,11 @@ namespace WinnerTest
 
             // Act
             FaceResult faceResult = new FaceResult(players);
-            List<Player> winners = faceResult.GetWinners();
+            List<Player> winners = faceResult.Winners;
 
             // Assert
             Assert.Equal(1, winners.Count);
-            Assert.Equal(playerOne.Name, faceResult.GetWinners()[0].Name);
+            Assert.Equal(playerOne.Name, faceResult.Winners[0].Name);
         }
 
         [Fact]
@@ -64,7 +62,6 @@ namespace WinnerTest
             playerOneHand.Add(new Card("JD"));
 
             Player playerOne = new Player(playerOneName, playerOneHand);
-            playerOne.SetScore();
 
             string playerTwoName = "Bob";
             List<Card> playerTwoHand = new List<Card>();
@@ -75,7 +72,6 @@ namespace WinnerTest
             playerTwoHand.Add(new Card("JD"));
 
             Player playerTwo = new Player(playerTwoName, playerTwoHand);
-            playerTwo.SetScore();
 
             List<Player> players = new List<Player>();
             players.Add(playerOne);
@@ -83,11 +79,11 @@ namespace WinnerTest
 
             // Act
             SuitResult suitResult = new SuitResult(players);
-            List<Player> winners = suitResult.GetWinners();
+            List<Player> winners = suitResult.Winners;
 
             // Assert
             Assert.Equal(1, winners.Count);
-            Assert.Equal(playerOne.Name, suitResult.GetWinners()[0].Name);
+            Assert.Equal(playerOne.Name, suitResult.Winners[0].Name);
         }
 
         [Fact]
@@ -103,7 +99,6 @@ namespace WinnerTest
             playerOneHand.Add(new Card("JD"));
 
             Player playerOne = new Player(playerOneName, playerOneHand);
-            playerOne.SetScore();
 
             string playerTwoName = "Bob";
             List<Card> playerTwoHand = new List<Card>();
@@ -114,7 +109,6 @@ namespace WinnerTest
             playerTwoHand.Add(new Card("JD"));
 
             Player playerTwo = new Player(playerTwoName, playerTwoHand);
-            playerTwo.SetScore();
 
             List<Player> players = new List<Player>();
             players.Add(playerOne);
@@ -122,10 +116,10 @@ namespace WinnerTest
 
             // Act
             FaceResult faceResult = new FaceResult(players);
-            List<Player> winners = faceResult.GetWinners();
+            List<Player> winners = faceResult.Winners;
 
             // Assert
-            Assert.Equal(players.Count, faceResult.GetWinners().Count);
+            Assert.Equal(players.Count, faceResult.Winners.Count);
         }
 
         [Fact]
@@ -141,7 +135,6 @@ namespace WinnerTest
             playerOneHand.Add(new Card("JD"));
 
             Player playerOne = new Player(playerOneName, playerOneHand);
-            playerOne.SetScore();
 
             string playerTwoName = "Bob";
             List<Card> playerTwoHand = new List<Card>();
@@ -152,7 +145,6 @@ namespace WinnerTest
             playerTwoHand.Add(new Card("JD"));
 
             Player playerTwo = new Player(playerTwoName, playerTwoHand);
-            playerTwo.SetScore();
 
             List<Player> players = new List<Player>();
             players.Add(playerOne);
@@ -160,7 +152,6 @@ namespace WinnerTest
 
             // Act
             FaceResult faceResult = new FaceResult(players);
-            List<Player> winners = faceResult.GetWinners();
 
             // Assert
             Assert.Equal($"{playerOne.Name}:{playerOne.FaceScore}", faceResult.GetResult());
@@ -179,7 +170,6 @@ namespace WinnerTest
             playerOneHand.Add(new Card("JD"));
 
             Player playerOne = new Player(playerOneName, playerOneHand);
-            playerOne.SetScore();
 
             string playerTwoName = "Bob";
             List<Card> playerTwoHand = new List<Card>();
@@ -190,7 +180,6 @@ namespace WinnerTest
             playerTwoHand.Add(new Card("JD"));
 
             Player playerTwo = new Player(playerTwoName, playerTwoHand);
-            playerTwo.SetScore();
 
             List<Player> players = new List<Player>();
             players.Add(playerOne);
@@ -198,7 +187,7 @@ namespace WinnerTest
 
             // Act
             FaceResult faceResult = new FaceResult(players);
-            List<Player> winners = faceResult.GetWinners();
+            List<Player> winners = faceResult.Winners;
 
             // Assert
             Assert.Equal($"{playerOne.Name},{playerTwo.Name}:{playerOne.FaceScore}", faceResult.GetResult());

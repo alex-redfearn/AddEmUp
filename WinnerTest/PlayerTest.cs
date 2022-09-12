@@ -20,7 +20,6 @@ namespace WinnerTest
 
             //Act
             Player player = new Player(playerName, hand);
-            player.SetScore();
 
             //Assert
             Assert.Equal(faceScore, player.FaceScore);
@@ -41,7 +40,6 @@ namespace WinnerTest
 
             //Act
             Player player = new Player(playerName, hand);
-            player.SetScore();
 
             //Assert
             Assert.Equal(suitScore, player.SuitScore);

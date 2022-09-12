@@ -53,8 +53,6 @@ namespace Winner
                     {
                         throw new Exception("Hand contains duplicate cards");
                     }
-
-                    player.SetScore();
                 }
 
                 WriteResult(players);
@@ -80,10 +78,10 @@ namespace Winner
             string result = faceResult.GetResult();
 
             // If the face values of > 1 players match.
-            if (faceResult.GetWinners().Count > 1)
+            if (faceResult.Winners.Count > 1)
             {
                 // Then the result is based on the suit values of these players.
-                SuitResult suitResult = new SuitResult(faceResult.GetWinners());
+                SuitResult suitResult = new SuitResult(faceResult.Winners);
                 result = suitResult.GetResult();
             }
 
@@ -135,35 +133,176 @@ namespace Winner
     /// </summary>
     public abstract class Result
     {
-        protected readonly List<Player> _winners;
+        public List<Player> Winners { get; private set; }
         protected readonly int _maxFaceScore;
         protected readonly int _maxSuitScore;
 
         public Result(List<Player> players)
         {
-            _maxFaceScore = GetMaxScore(players.Select(player => player.FaceScore));
-            _maxSuitScore = GetMaxScore(players.Select(player => player.SuitScore));
-            _winners = GetWinners(players);
+            _maxFaceScore = GetMaxFaceScore(players);
+            _maxSuitScore = GetMaxSuitScore(players);
+            Winners = GetWinners(players);
+        }
+
+        protected int GetMaxFaceScore(List<Player> players)
+        {
+            return players.Select(player => player.FaceScore).Max();
+        }
+
+        protected int GetMaxSuitScore(List<Player> players)
+        {
+            return players.Select(player => player.SuitScore).Max();
         }
 
         protected abstract List<Player> GetWinners(List<Player> players);
 
-        private static int GetMaxScore(IEnumerable<int> scores)
-        {
-            return scores.Max();
-        }
-
-        public List<Player> GetWinners()
-        {
-            return _winners;
-        }
-
         public string GetResult()
         {
             // The result should be in the format {Name}:{score} or {Name},{Name}:{Score} in a tie.
-            string names = String.Join(",", _winners.Select(player => player.Name));
+            string names = String.Join(",", Winners.Select(player => player.Name));
 
             return $"{names}:{_maxFaceScore}";
+        }
+    }
+
+    /// <summary>
+    /// Represents a single player in the game.
+    /// </summary>
+    public class Player
+    {
+        public string Name { get; private set; }
+        public List<Card> Hand { get; private set; }
+        public int FaceScore
+        {
+            get { return Hand.Select(card => card.FaceValue).Sum(); }
+        }
+        public int SuitScore
+        {
+            get { return Hand.Select(card => card.SuitValue).Sum(); }
+        }
+
+        public Player(string name, List<Card> cards)
+        {
+            Name = name;
+            Hand = cards;
+        }
+
+        public static bool ArePlayersUnique(List<Player> players)
+        {
+            // If list.Distinct() has a count < list we can safely assume a duplicate is present.
+            return players.Select(player => player.Name).Distinct().Count() == players.Count;
+        }
+
+        public bool IsHandUnique()
+        {
+            return Hand.Select(card => card.Key).Distinct().Count() == Hand.Count;
+        }
+    }
+
+    /// <summary>
+    /// Defines non numeric card face values and their equivalent int values.
+    /// </summary>
+    public enum CardFace
+    {
+        A = 1,
+        J = 11,
+        Q = 12,
+        K = 13
+    }
+
+    /// <summary>
+    /// Defines card suits and their int values.
+    /// </summary>
+    public enum CardSuit
+    {
+        S = 4,
+        H = 3,
+        D = 2,
+        C = 1
+    }
+
+    /// <summary>
+    /// Represents a single card in a players hand.
+    /// </summary>
+    public class Card
+    {
+        public string Key { get; private set; }
+        public int FaceValue { get; private set; }
+        public int SuitValue { get; private set; }
+
+        public Card(string card)
+        {
+            Key = card;
+            FaceValue = GetFaceValue(card);
+            SuitValue = GetSuitValue(card);
+        }
+
+        // Each card is provided in the format {face}{suit} e.g. AH,3C,10D
+        private static int GetFaceValue(string card)
+        {
+            int value = 0;
+
+            if (IsValidCard(card))
+            {
+                string face = card.Substring(0, card.Length - 1);
+                value = ParseFace(face);
+            }
+
+            // Standard card values 1 to 13.
+            if(value == 0)
+                throw new Exception($"Invalid suit{card}");
+
+            return value;
+        }
+
+        private static int ParseFace(string face)
+        {
+            int value = 0;
+            if (Int32.TryParse(face, out value))
+            {
+                if (value > 0 && value < 11)
+                {
+                    return value;
+                }
+            }
+            else if (Enum.TryParse<CardFace>(face, out CardFace charFace))
+            {
+                return (int)charFace;
+            }
+
+            return value;
+        }
+
+        private static int GetSuitValue(string card)
+        {
+            int value = 0;
+            if (IsValidCard(card))
+            {
+                string suit = card.Substring(card.Length - 1);
+                value = ParseSuit(suit);
+            }
+
+            if(value == 0)
+                throw new Exception($"Invalid suit{card}");
+
+            return value;
+        }
+
+        private static int ParseSuit(string suit)
+        {
+            int value = 0;
+            if (Enum.TryParse<CardSuit>(suit, out CardSuit suitValue))
+            {
+                value = (int)suitValue;
+            }
+
+            return value;
+        }
+
+        private static bool IsValidCard(string card)
+        {
+            // A card must have a lenth of two (2H) or three (10C).
+            return card.Length > 1 && card.Length < 4;
         }
     }
 
@@ -172,6 +311,7 @@ namespace Winner
     /// </summary>
     public class InputFile : File
     {
+
         public InputFile(string[] args, string option) : base(args, option)
         {
             // Using parents constructor.
@@ -179,20 +319,19 @@ namespace Winner
 
         public List<Player> Parse()
         {
+            // Returns text from implicit file
             string text = GetText();
-            string[] rows = GetRows(text);
-            return ParsePlayers(rows);
-        }
 
-        private bool IsTextFile()
-        {
-            string[] splitFile = base.Name.Split(".");
-            return splitFile.Length != 0 && splitFile[splitFile.Length - 1] == "txt";
+            // Parse text into rows
+            string[] rows = ParseRows(text);
+
+            // Parse players from rows
+            return ParsePlayers(rows);
         }
 
         private string GetText()
         {
-            if (String.IsNullOrEmpty(base.Name) || !IsTextFile())
+            if (!IsTextFile())
             {
                 throw new Exception("Missing or invalid input file");
             }
@@ -200,7 +339,7 @@ namespace Winner
             return System.IO.File.ReadAllText(base.Name);
         }
 
-        private static string[] GetRows(string text)
+        private static string[] ParseRows(string text)
         {
             // Each player is seperated within the file by a new line.
             return text.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
@@ -283,8 +422,8 @@ namespace Winner
         public static readonly string INPUT_FILE_OPTION = "--in";
         public static readonly string OUTPUT_FILE_OPTION = "--out";
 
-        public string Name { get; }
-        
+        public string Name { get; private set; }
+
         public File(string[] args, string option)
         {
             Name = GetFile(option, args);
@@ -313,137 +452,11 @@ namespace Winner
                 return "";
             }
         }
-    }
 
-    /// <summary>
-    /// Represents a single player in the game.
-    /// </summary>
-    public class Player
-    {
-        public string Name { get; }
-        public List<Card> Hand { get; }
-        public int FaceScore { get; private set; }
-        public int SuitScore { get; private set; }
-
-        public Player(string name, List<Card> cards)
+        protected bool IsTextFile()
         {
-            Name = name;
-            Hand = cards;
-        }
-
-        public static bool ArePlayersUnique(List<Player> players)
-        {
-            // If list.Distinct() has a count < list we can safely assume a duplicate is present.
-            return players.Select(player => player.Name).Distinct().Count() == players.Count;
-        }
-
-        public bool IsHandUnique()
-        {
-            return Hand.Select(card => card.Key).Distinct().Count() == Hand.Count;
-        }
-
-        public void SetScore()
-        {
-            FaceScore = Hand.Select(card => card.FaceValue).Sum();
-            SuitScore = Hand.Select(card => card.SuitValue).Sum();
-        }
-    }
-
-    /// <summary>
-    /// Defines non numeric card face values and their equivalent int values.
-    /// </summary>
-    public enum CardFace
-    {
-        A = 1,
-        J = 11,
-        Q = 12,
-        K = 13
-    }
-
-    /// <summary>
-    /// Defines card suits and their int values.
-    /// </summary>
-    public enum CardSuit
-    {
-        S = 4,
-        H = 3,
-        D = 2,
-        C = 1
-    }
-
-    /// <summary>
-    /// Represents a single card in a players hand.
-    /// </summary>
-    public class Card
-    {
-        public string Key { get; }
-        public int FaceValue { get; }
-        public int SuitValue { get; }
-
-        public Card(string card)
-        {
-            Key = card;
-            FaceValue = ParseFace();
-            SuitValue = ParseSuit();
-        }
-
-        // Each card is provided in the format {face}{suit} e.g. AH,3C,10D
-        private int ParseFace()
-        {
-            int value = 0;
-            if (IsValidCard())
-            {
-                string face = Key.Substring(0, Key.Length - 1);
-
-                // A cards face can either be an int value (2 - 10) or A,J,Q,K
-                int faceIntValue;
-                if (Int32.TryParse(face, out faceIntValue))
-                {
-                    value = faceIntValue;
-                }
-
-                CardFace faceCharValue;
-                if (Enum.TryParse<CardFace>(face, out faceCharValue))
-                {
-                    value = (int)faceCharValue;
-                }
-            }
-
-            // Standard card values 1 to 13.
-            if (value < 1 || value > 13)
-            {
-                throw new Exception($"Invalid face, {Key}");
-            }
-
-            return value;
-        }
-
-        private int ParseSuit()
-        {
-            int value = 0;
-            if (IsValidCard())
-            {
-                string suit = Key.Substring(Key.Length - 1);
-
-                CardSuit suitValue;
-                if (Enum.TryParse<CardSuit>(suit, out suitValue))
-                {
-                    value = (int)suitValue;
-                }
-            }
-
-            if (value < 1 || value > 4)
-            {
-                throw new Exception($"Invalid suit, {Key}");
-            }
-
-            return value;
-        }
-
-        private bool IsValidCard()
-        {
-            // A card must have a lenth of two (2H) or three (10C).
-            return Key.Length > 1 && Key.Length < 4;
+            string[] splitFile = Name.Split(".");
+            return splitFile.Length != 0 && splitFile[splitFile.Length - 1] == "txt";
         }
     }
 }
