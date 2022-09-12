@@ -45,7 +45,7 @@ namespace WinnerTest
             List<Player> winners = faceResult.Winners;
 
             // Assert
-            Assert.Equal(1, winners.Count);
+            Assert.Single(winners);
             Assert.Equal(playerOne.Name, faceResult.Winners[0].Name);
         }
 
@@ -82,7 +82,7 @@ namespace WinnerTest
             List<Player> winners = suitResult.Winners;
 
             // Assert
-            Assert.Equal(1, winners.Count);
+            Assert.Single(winners);
             Assert.Equal(playerOne.Name, suitResult.Winners[0].Name);
         }
 
